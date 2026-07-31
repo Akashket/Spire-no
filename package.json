@@ -1,0 +1,19 @@
+{
+  "name": "spire",
+  "private": true,
+  "description": "Spire.no - redaksjonelt nettsted for foreldre. Monorepo med backend (NestJS) og frontend (Next.js).",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev --workspace=apps/backend",
+    "build:backend": "npm run build --workspace=apps/backend",
+    "test:backend": "npm run test --workspace=apps/backend",
+    "test:backend:e2e": "npm run test:e2e --workspace=apps/backend",
+    "prisma:generate": "npm run prisma:generate --workspace=apps/backend",
+    "prisma:migrate": "npm run prisma:migrate --workspace=apps/backend",
+    "prisma:studio": "npm run prisma:studio --workspace=apps/backend",
+    "infra:up": "docker compose up -d postgres redis minio",
+    "infra:down": "docker compose down"
+  }
+}

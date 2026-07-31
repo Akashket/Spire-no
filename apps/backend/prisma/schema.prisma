@@ -1,0 +1,185 @@
+// Prisma-skjema for Spire.no.
+//
+// Merk: feltnavn i koden er på engelsk (standard praksis for identifikatorer i kildekode,
+// selv i et norsk-språklig produkt) - kolonnenavnene i selve databasen er snake_case via @map/@@map,
+// som er SQL-konvensjon og gjør det ryddig å lese rådata i f.eks. psql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Roller & aldersgrupper -------------------------------------------------
+
+// "Gjest" (uinnlogget) finnes bevisst IKKE som en verdi her - en gjest har ingen bruker-rad
+// i det hele tatt. Rollen håndteres i applikasjonslaget ved fravær av et gyldig JWT.
+enum Role {
+  FREE // Gratis-bruker (standard ved registrering)
+  SUBSCRIBER // Har aktivt abonnement - full tilgang til låst innhold
+  EDITOR // Kan opprette/redigere artikler
+  ADMIN // Full tilgang, inkl. brukerhåndtering og trekninger
+
+  @@map("role")
+}
+
+enum AgeGroup {
+  ONE_TO_THREE // 1-3 år
+  THREE_TO_SIX // 3-6 år
+  SCHOOL_AGE // Skolebarn
+
+  @@map("age_group")
+}
+
+enum SubscriptionStatus {
+  INACTIVE
+  ACTIVE
+  PAST_DUE // Betaling feilet, men abonnementet er ikke kansellert ennå (Stripe sin "dunning"-periode)
+  CANCELED
+
+  @@map("subscription_status")
+}
+
+enum GiveawayStatus {
+  OPEN // Åpen for påmelding
+  DRAWN // Vinner er trukket
+  CANCELED
+
+  @@map("giveaway_status")
+}
+
+// --- Modeller ----------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(FREE)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // GDPR: gyldig postadresse trengs KUN midlertidig for premieutsendelse ved gevinst.
+  // Vi lagrer den derfor ikke som fast profilfelt her, men på selve GiveawayEntry
+  // (se begrunnelse for dataminimering der) - feltet under er bevisst utelatt.
+
+  articles        Article[]       @relation("ArticleAuthor")
+  subscription    Subscription?
+  giveawayEntries GiveawayEntry[]
+  wonGiveaways    Giveaway[]      @relation("GiveawayWinner")
+
+  @@map("users")
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String
+  slug String @unique
+
+  articles Article[]
+
+  @@map("categories")
+}
+
+model Article {
+  id             String    @id @default(uuid())
+  title          String
+  excerpt        String // Ingress
+  content        String // Brødtekst (markdown eller HTML - avgjøres i artikkel-modulen)
+  imageUrl       String?   @map("image_url")
+  ageGroup       AgeGroup  @map("age_group")
+  subscriberOnly Boolean   @default(false) @map("subscriber_only")
+  publishedAt    DateTime? @map("published_at") // null = kladd/ikke publisert ennå
+  views          Int       @default(0)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  categoryId String   @map("category_id")
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  authorId String @map("author_id")
+  author   User   @relation("ArticleAuthor", fields: [authorId], references: [id])
+
+  // Indekser på feltene vi kommer til å filtrere/sortere mest på (kategori- og aldersgruppe-filter,
+  // "mest lest"-lister, forsidevisning av publiserte saker) - uten disse blir spørringene tregere
+  // etter hvert som artikkeltabellen vokser, siden Postgres må scanne hele tabellen.
+  @@index([categoryId])
+  @@index([ageGroup])
+  @@index([publishedAt])
+  @@index([views])
+  @@map("articles")
+}
+
+model Subscription {
+  id        String @id @default(uuid())
+  userId    String @unique @map("user_id")
+  user      User   @relation(fields: [userId], references: [id])
+
+  stripeCustomerId     String? @unique @map("stripe_customer_id")
+  stripeSubscriptionId String? @unique @map("stripe_subscription_id")
+
+  status             SubscriptionStatus @default(INACTIVE)
+  currentPeriodStart DateTime?          @map("current_period_start")
+  currentPeriodEnd   DateTime?          @map("current_period_end")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("subscriptions")
+}
+
+// Lagrer Stripe webhook-event-IDer vi allerede har behandlet.
+// Stripe garanterer IKKE "exactly-once"-levering av webhooks - samme event kan komme flere ganger
+// (nettverksfeil + Stripe sin retry-logikk). Uten denne tabellen kunne et duplisert
+// "invoice.paid"-event forlenget et abonnement to ganger. Vi tar med den nå siden den hører
+// naturlig til datamodellen, selv om selve webhook-handleren bygges i abonnement-modulen.
+model ProcessedStripeEvent {
+  id          String   @id // Stripe sin event-ID (evt_...), brukes direkte som primærnøkkel
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_stripe_events")
+}
+
+model Giveaway {
+  id               String         @id @default(uuid())
+  title            String
+  prizeDescription String         @map("prize_description")
+  deadline         DateTime
+  status           GiveawayStatus @default(OPEN)
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  winnerId String? @map("winner_id")
+  winner   User?   @relation("GiveawayWinner", fields: [winnerId], references: [id])
+
+  entries GiveawayEntry[]
+
+  @@index([status])
+  @@index([deadline])
+  @@map("giveaways")
+}
+
+model GiveawayEntry {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  giveawayId String   @map("giveaway_id")
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id])
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
+
+  // GDPR-dataminimering: postadresse for premieutsendelse lagres KUN her (per påmelding),
+  // ikke på User. Dermed forsvinner adressen naturlig når selve påmeldingen ryddes/slettes
+  // etter at en trekning er avsluttet og premien sendt, i stedet for å ligge lagret på
+  // brukerprofilen på ubestemt tid "for sikkerhets skyld".
+  shippingAddress String? @map("shipping_address")
+
+  // Hindrer dobbel-deltakelse på databasenivå (ikke bare i applikasjonskoden) -
+  // en race condition der samme bruker sender to påmeldinger samtidig ville kunne snike seg
+  // forbi en applikasjons-sjekk, men ikke forbi denne unike constrainten.
+  @@unique([giveawayId, userId])
+  @@map("giveaway_entries")
+}

@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.next/
+
+# Env / secrets - ALDRI commit ekte secrets. .env.example er trygg fordi den kun har placeholder-verdier.
+.env
+.env.local
+.env.*.local
+apps/backend/.env
+
+# Prisma
+apps/backend/generated/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test/coverage
+coverage/
+
+# Docker volumes hvis de noen gang havner lokalt i repoet
+minio-data/
+postgres-data/
+
+# OS/editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
