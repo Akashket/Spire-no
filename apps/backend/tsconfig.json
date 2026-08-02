@@ -6,6 +6,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
@@ -16,6 +17,10 @@
     "strictNullChecks": true,
     "noImplicitAny": true,
     "strictBindCallApply": false,
+    // DTO-klasser (f.eks. RegisterDto) fylles inn av ValidationPipe/class-transformer ved runtime,
+    // ikke via en konstruktør - uten dette ville strict mode krevd et konstruktørkall eller "!" på
+    // hvert eneste DTO-felt, som er unødvendig støy for et mønster Nest selv bygger på.
+    "strictPropertyInitialization": false,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": false
   }

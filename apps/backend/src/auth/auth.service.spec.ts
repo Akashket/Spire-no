@@ -1,7 +1,11 @@
 import { Test } from '@nestjs/testing';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+// Default-import (ikke "* as bcrypt") er bevisst: med esModuleInterop pakkes namespace-imports
+// (* as) inn i et frosset objekt av TypeScripts __importStar-hjelper, som gjør at jest.spyOn ikke
+// klarer å omdefinere metoder på det ("Cannot redefine property"). Default-import peker derimot
+// direkte på det faktiske, mutable CommonJS-modulobjektet.
+import bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 
