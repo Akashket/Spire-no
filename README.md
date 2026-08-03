@@ -72,7 +72,7 @@ npm run test:backend:e2e    # integrasjonstester (krever npm run infra:up + migr
 - [x] Auth (registrering, innlogging, JWT, roller) + tester
 - [x] Artikler (CRUD, kategori-/aldersgruppefiltrering, paginering, visningsteller, paywall) + tester
 - [x] Abonnement (Stripe test mode, webhooks, idempotent håndtering) + tester
-- [ ] Trekninger (giveaways) + cron-jobb for automatisk trekning
+- [x] Trekninger (giveaways) + cron-jobb for automatisk trekning + tester
 - [ ] Admin-panel
 - [ ] Frontend (Next.js)
 - [ ] CI/CD (GitHub Actions)

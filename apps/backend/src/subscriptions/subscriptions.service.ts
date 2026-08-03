@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeService } from '../stripe/stripe.service';
 import { AuthenticatedUser } from '../common/decorators/current-user.decorator';
+import { isUniqueConstraintViolation } from '../common/prisma-errors';
 
 const ROLE_ELIGIBLE_FOR_SYNC: Role[] = [Role.FREE, Role.SUBSCRIBER];
 const ACCESS_GRANTING_STATUSES: SubscriptionStatus[] = [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE];
@@ -28,10 +29,6 @@ function mapStripeStatus(status: string): SubscriptionStatus {
     default:
       return SubscriptionStatus.INACTIVE;
   }
-}
-
-function isUniqueConstraintViolation(error: unknown): boolean {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
 
 @Injectable()

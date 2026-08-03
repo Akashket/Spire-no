@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { LoggerModule } from 'nestjs-pino';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
@@ -10,6 +11,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { ArticlesModule } from './articles/articles.module';
 import { StripeModule } from './stripe/stripe.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { GiveawaysModule } from './giveaways/giveaways.module';
 
 @Module({
   imports: [
@@ -34,6 +36,11 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     // attraktivt mål for brute-force-forsøk enn f.eks. et åpent GET /articles-endepunkt.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
 
+    // Registrerer @Cron(...)-håndterte metoder (se GiveawaysService.autoDrawExpiredGiveaways) - uten
+    // denne gjør @Cron-dekoratoren ingenting, den trenger ScheduleModule sin runtime for faktisk å
+    // planlegge og trigge jobben.
+    ScheduleModule.forRoot(),
+
     PrismaModule,
     UsersModule,
     AuthModule,
@@ -41,6 +48,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     ArticlesModule,
     StripeModule,
     SubscriptionsModule,
+    GiveawaysModule,
   ],
   providers: [
     {
