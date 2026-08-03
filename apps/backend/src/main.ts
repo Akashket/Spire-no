@@ -9,7 +9,12 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 async function bootstrap() {
   // bufferLogs: true samler opp loggmeldinger fra oppstart-fasen og sender dem videre til pino
   // først etter at appen (og dermed pino-loggeren) er ferdig konstruert, slik at ingenting går tapt.
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: true - Nest sin innebygde body-parser lagrer de rå request-byte-ene på req.rawBody
+  // ved SIDEN av den vanlige JSON-parsingen (req.body er upåvirket for alle andre ruter). Trengs
+  // av Stripe-webhooken (subscriptions/subscriptions.controller.ts), som må verifisere en signatur
+  // beregnet over de eksakte byte-ene Stripe sendte - et JSON.stringify(req.body) i etterkant ville
+  // gitt en annen bytesekvens (feltrekkefølge/mellomrom) og fått signaturverifiseringen til å feile.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger));
 
   // Helmet setter en rekke sikre HTTP-headere by default (bl.a. hindrer clickjacking og

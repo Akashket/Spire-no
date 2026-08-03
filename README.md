@@ -42,6 +42,21 @@ spire/
    ```
    API-et kjører på `http://localhost:3001`, Swagger-dokumentasjon på `http://localhost:3001/docs`.
 
+## Stripe (test mode)
+
+Abonnement-modulen (`apps/backend/src/subscriptions`) krever en gratis Stripe-konto i test-mode:
+
+1. Opprett konto på [dashboard.stripe.com/register](https://dashboard.stripe.com/register) - sjekk at "Test mode" er PÅ.
+2. Developers → API keys → kopier `Secret key` (`sk_test_...`) inn i `apps/backend/.env` som `STRIPE_SECRET_KEY`.
+3. Product catalog → "+ Add product" → opprett et recurring test-produkt → kopier `Price ID` (`price_...`) inn som `STRIPE_PRICE_ID`.
+4. Installer [Stripe CLI](https://github.com/stripe/stripe-cli/releases/latest), kjør `stripe login`.
+5. Med backend kjørende: `stripe listen --forward-to localhost:3001/subscriptions/webhook` - kopier den utskrevne `whsec_...`-signeringsnøkkelen inn som `STRIPE_WEBHOOK_SECRET`. Denne endrer seg hver gang `stripe listen` startes på nytt.
+
+Uten ekte nøkler starter backend og alle unit-/webhook-e2e-tester fint (webhook-testene signerer
+egne test-events lokalt via Stripe-SDK-ens `generateTestHeaderString`, uten nettverkskall) - kun
+`POST /subscriptions/checkout` trenger en ekte `STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID` for faktisk å
+opprette en Checkout Session.
+
 ## Tester
 
 ```
@@ -56,7 +71,7 @@ npm run test:backend:e2e    # integrasjonstester (krever npm run infra:up + migr
 - [x] Databaseskjema (Prisma) - users, articles, categories, subscriptions, giveaways, giveaway_entries
 - [x] Auth (registrering, innlogging, JWT, roller) + tester
 - [x] Artikler (CRUD, kategori-/aldersgruppefiltrering, paginering, visningsteller, paywall) + tester
-- [ ] Abonnement (Stripe test mode, webhooks, idempotent håndtering)
+- [x] Abonnement (Stripe test mode, webhooks, idempotent håndtering) + tester
 - [ ] Trekninger (giveaways) + cron-jobb for automatisk trekning
 - [ ] Admin-panel
 - [ ] Frontend (Next.js)

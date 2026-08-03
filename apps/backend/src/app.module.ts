@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ArticlesModule } from './articles/articles.module';
+import { StripeModule } from './stripe/stripe.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { ArticlesModule } from './articles/articles.module';
     AuthModule,
     CategoriesModule,
     ArticlesModule,
+    StripeModule,
+    SubscriptionsModule,
   ],
   providers: [
     {
