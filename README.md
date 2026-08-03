@@ -55,7 +55,7 @@ npm run test:backend:e2e    # integrasjonstester (krever npm run infra:up + migr
 - [x] docker-compose (Postgres, Redis, MinIO)
 - [x] Databaseskjema (Prisma) - users, articles, categories, subscriptions, giveaways, giveaway_entries
 - [x] Auth (registrering, innlogging, JWT, roller) + tester
-- [ ] Artikler (CRUD, kategori-/aldersgruppefiltrering, paginering, visningsteller)
+- [x] Artikler (CRUD, kategori-/aldersgruppefiltrering, paginering, visningsteller, paywall) + tester
 - [ ] Abonnement (Stripe test mode, webhooks, idempotent håndtering)
 - [ ] Trekninger (giveaways) + cron-jobb for automatisk trekning
 - [ ] Admin-panel
