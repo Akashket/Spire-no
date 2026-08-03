@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Ingen ekte hemmeligheter - samme "dev-only"-placeholdere som apps/backend/.env.example.
+  # unit-tests-jobben kobler seg aldri til en ekte database (Prisma er mocket i alle unit-tester),
+  # men "prisma generate" krever likevel at DATABASE_URL peker på NOE gyldig for å parse
+  # datasource-blokken i schema.prisma - denne verdien blir aldri faktisk brukt til en tilkobling der.
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_placeholder?schema=public
+  JWT_ACCESS_SECRET: ci-only-access-secret
+  JWT_ACCESS_EXPIRES_IN: 15m
+  JWT_REFRESH_SECRET: ci-only-refresh-secret
+  JWT_REFRESH_EXPIRES_IN: 7d
+  STRIPE_SECRET_KEY: stripe_secret_key_not_set_yet
+  STRIPE_WEBHOOK_SECRET: whsec_test_dummy_for_local_unit_and_e2e_tests
+  STRIPE_PRICE_ID: price_placeholder_replace_with_real_price_id
+  FRONTEND_URL: http://localhost:3000
+  NODE_ENV: test
+
+jobs:
+  unit-tests:
+    name: Unit-tester, typesjekk og build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # npm ci (ikke npm install): krever en committet lockfile som stemmer eksakt, sletter
+      # node_modules først og feiler ved avvik - deterministisk og reproduserbart, som er hele
+      # poenget med en CI-pipeline.
+      - run: npm ci
+
+      - name: Generer Prisma-klient
+        run: npm run prisma:generate
+
+      - name: Typesjekk backend
+        run: npx tsc --noEmit -p apps/backend
+
+      - name: Bygg backend
+        run: npm run build:backend
+
+      - name: Unit-tester
+        run: npm run test:backend
+
+  e2e-tests:
+    name: E2E-tester (mot ekte Postgres)
+    runs-on: ubuntu-latest
+    services:
+      # GitHub Actions sin "service container"-funksjon - spinner opp en ekte, engangs
+      # Postgres-instans for varigheten av jobben, tilgjengelig på localhost fra kjørende steg.
+      # Samme bruker/passord/database som docker-compose.yml, slik at det er lett å kjenne igjen.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: spire
+          POSTGRES_PASSWORD: spire
+          POSTGRES_DB: spire
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U spire -d spire"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://spire:spire@localhost:5432/spire?schema=public
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generer Prisma-klient
+        run: npm run prisma:generate
+
+      # prisma migrate deploy (ikke migrate dev): den ikke-interaktive varianten laget for CI/prod -
+      # kjører kun migrasjoner som allerede er committet, ber aldri om input, oppretter aldri nye
+      # migrasjonsfiler på egen hånd.
+      - name: Kjør database-migrasjoner
+        run: npm run --workspace=apps/backend prisma:deploy
+
+      - name: E2E-tester
+        run: npm run test:backend:e2e

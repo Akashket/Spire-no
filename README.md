@@ -1,5 +1,7 @@
 # Spire.no
 
+[![CI](https://github.com/Akashket/Spire-no/actions/workflows/ci.yml/badge.svg)](https://github.com/Akashket/Spire-no/actions/workflows/ci.yml)
+
 Redaksjonelt nettsted for foreldre - portefølje-/læringsprosjekt for backend-utvikling i dybden.
 Se [`docs/project-brief.md`](docs/project-brief.md) for hele det opprinnelige prosjektoppdraget.
 
@@ -74,8 +76,8 @@ npm run test:backend:e2e    # integrasjonstester (krever npm run infra:up + migr
 - [x] Abonnement (Stripe test mode, webhooks, idempotent håndtering) + tester
 - [x] Trekninger (giveaways) + cron-jobb for automatisk trekning + tester
 - [x] Admin-panel (oversikt/statistikk) + tester
+- [x] CI/CD (GitHub Actions - typesjekk, build, unit- og e2e-tester mot ekte Postgres på hver push/PR)
 - [ ] Frontend (Next.js)
-- [ ] CI/CD (GitHub Actions)
 
 ## Arkitekturvalg (kort oppsummert)
 
