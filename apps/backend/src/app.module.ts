@@ -12,6 +12,7 @@ import { ArticlesModule } from './articles/articles.module';
 import { StripeModule } from './stripe/stripe.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { GiveawaysModule } from './giveaways/giveaways.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { GiveawaysModule } from './giveaways/giveaways.module';
     StripeModule,
     SubscriptionsModule,
     GiveawaysModule,
+    AdminModule,
   ],
   providers: [
     {
